@@ -1,0 +1,7 @@
+[1;31m
+Start test 1[0m
+.Please input operation (encode/decode/exit):
+> 00 0 0 0 00 00000 
+,There is no '00 0 0 0 00 00000 ' operation
+
+.Please input operation (encode/decode/exit):

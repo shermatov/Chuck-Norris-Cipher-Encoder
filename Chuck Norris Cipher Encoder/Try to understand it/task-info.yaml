@@ -1,0 +1,202 @@
+type: edu
+files:
+- name: src/chucknorris/Main.java
+  visible: true
+  text: |
+    package chucknorris;
+    import java.util.Scanner;
+    public class Main {
+        public static void main(String[] args) {
+            Scanner scanner = new Scanner(System.in);
+
+            System.out.print("Input string:");
+            String string = scanner.nextLine();
+
+            System.out.println("\nThe result:");
+
+            printZeroBinary(string);
+        }
+
+        public static void ascii(String word) {
+            String string = "";
+
+            for (int i = 0; i < word.length(); i++) {
+                int character = (int) word.charAt(i);
+                string = toByte(character);
+                if(string.length()< 7) {
+                    string = 0 + string;
+                }
+                System.out.println(word.charAt(i) + " = " + string);
+            }
+
+        }
+
+        public static String toByte(int num) {
+            if(num == 0) {
+                return "";
+            } else {
+                int rem = num % 2;
+                return "" +toByte(num/2)+ rem;
+            }
+        }
+
+        public static String withoutOnes(int num) {
+            if(num == 0) {
+                return "";
+            } else {
+                int rem = num % 2;
+                return "" + rem + " " + withoutOnes(num/2);
+            }
+        }
+
+
+        public static void printZeroBinary(String word) {
+            byte[] bytes = word.getBytes();
+            String converted = "";
+            String answer = "";
+
+            for (int i = 0; i < word.length(); i++)
+            {
+                String temp = Integer.toBinaryString(bytes[i]);
+                while (temp.length() < 7)
+                    temp = "0" + temp;
+                converted += temp;
+            }
+
+            int i = 0;
+            char currentChar;
+            while (i < converted.length())
+            {
+                if (converted.charAt(i) == '0')
+                {
+                    System.out.print("00 ");
+                    currentChar = '0';
+                }
+                else
+                {
+                    System.out.print("0 ");
+                    currentChar = '1';
+                }
+
+                while (converted.charAt(i) == currentChar)
+                {
+                    System.out.print("0");
+                    i++;
+                    if(i == converted.length())
+                        break;
+                }
+
+                if (i < converted.length())
+                    System.out.print(" ");
+            }
+        }
+
+    }
+  learner_created: false
+- name: test/ChuckNorrisTest.java
+  visible: false
+  text: |-
+    import org.assertj.swing.util.Pair;
+    import org.hyperskill.hstest.dynamic.DynamicTest;
+    import org.hyperskill.hstest.stage.StageTest;
+    import org.hyperskill.hstest.testcase.CheckResult;
+    import org.hyperskill.hstest.testing.TestedProgram;
+
+    import java.util.ArrayList;
+    import java.util.Arrays;
+    import java.util.List;
+
+    public class ChuckNorrisTest extends StageTest {
+      class Case{
+        String input;
+        String result;
+        String invert;
+        Case(String input, String result, String invert){
+          this.input=input;
+          this.result=result;
+          this.invert=invert;
+        }
+      }
+      Object[] test_data(){
+        String ascii = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
+        List<String> list = new ArrayList<>(Arrays.asList(ascii.split("")));
+        list.addAll(Arrays.asList("greetings!",
+                "hello world!",
+                ascii));
+        List<Case> r = new ArrayList<>();
+        for(String s : list){
+          String code = "";
+          String result_inv = "";
+          for (int i=0;i<s.length();i++){
+            String result = Integer.toBinaryString(s.charAt(i));
+            String resultWithPadding = String.format("%7s", result).replaceAll(" ","0");
+            code = code.concat(resultWithPadding);
+          }
+          for(int i=0;i<code.length()/7;i++){
+            String tmp = code.substring(i*7,(i+1)*7).replace('0', '2').replace('1', '0').replace('2', '1');
+            char c =  (char)Integer.parseInt(tmp,2);
+            result_inv = result_inv.concat(String.valueOf(c));
+          }
+          String result="";
+          char x=code.charAt(0);
+          int start=0;
+          for(int i=1;i<code.length();i++){
+            if(code.charAt(i)!=x){
+              result = result.concat(x=='1'?"0 ":"00 ").concat("0".repeat(i-start)+" ");
+              x=code.charAt(i);
+              start=i;
+            }
+          }
+          result = result.concat(x=='1'?"0 ":"00 ").concat("0".repeat(code.length()-start)+" ");
+
+          r.add(new Case(result,s,result_inv));
+        }
+        return r.toArray();
+      }
+
+      @DynamicTest(data = "test_data")
+      CheckResult test(Case input_case) {
+        TestedProgram pr = new TestedProgram();
+        String output = pr.start().strip().toLowerCase();
+        List<String> list = new ArrayList<>(Arrays.asList(output.split("\n")));
+        list.removeAll(Arrays.asList(""));
+
+        if(list.size()!=1 || !list.get(0).contains("input")){
+          return CheckResult.wrong("When the program just started, output should contain exactly 1 non-empty line, " +
+                  "containing \"input\" substring as it shown in the example, followed by an input");
+        }
+        output = pr.execute(input_case.input);
+        list = new ArrayList<>(Arrays.asList(output.split("\n")));
+        list.removeAll(Arrays.asList(""));
+        if(list.size()!=2){
+          return CheckResult.wrong("When the user has entered a string, there should be printed exactly 2 " +
+                  "non-empty lines");
+        }
+        if(!list.get(0).toLowerCase().contains("result")){
+          return CheckResult.wrong("When the user has entered a string, the first line of the output " +
+                  "should contain \"result\" substring");
+        }
+        if(list.get(1).equals(input_case.invert)){
+          return CheckResult.wrong("Input string was not decoded correctly, in this case the reason might be that you've " +
+                  "decoded '0' sequence with first block \"0\" and '1' sequence with first block \"00\", so the decoded " +
+                  "string is \"inverted\"");
+        }
+        if(!list.get(1).equals(input_case.result)){
+          return CheckResult.wrong("Input string was not decoded correctly.");
+        }
+
+        return CheckResult.correct();
+      }
+    }
+  learner_created: false
+feedback_link: https://hyperskill.org/projects/293/stages/1539/implement#comment
+status: Failed
+feedback:
+  message: "Wrong answer in test #1\n\nWhen the user has entered a string, the first\
+    \ line of the output should contain &quot;result&quot; substring\n\nPlease find\
+    \ below the output of your program during this failed test.\nNote that the &#39;&gt;&#39;\
+    \ character indicates the beginning of the input line.\n\n---\n\nPlease input\
+    \ operation (encode/decode/exit):\n&gt; 00 0 0 0 00 00000 \nThere is no &#39;00\
+    \ 0 0 0 00 00000 &#39; operation\n\nPlease input operation (encode/decode/exit):"
+  time: "Tue, 31 Jan 2023 00:37:26 UTC"
+record: -1
